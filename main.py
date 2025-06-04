@@ -8,6 +8,7 @@ pygame.init()
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 FPS = 60
+font = pygame.font.Font(None, 36)
 
 # Colors
 WHITE = (255, 255, 255)
@@ -34,6 +35,7 @@ obstacle_rect = obstacle_image.get_rect(center=(random.randint(0, SCREEN_WIDTH),
 score = 0
 game_over = False
 
+
 # Game loop
 while True:
     for event in pygame.event.get():
@@ -41,7 +43,11 @@ while True:
             pygame.quit()
             sys.exit()
 
-    
+    # Draw everything
+    screen.fill(BLACK)
+    screen.blit(ship_image, ship_rect)
+    screen.blit(obstacle_image, obstacle_rect)
+
     if not game_over:
         # Move the obstacle
         obstacle_rect.y += 10 
@@ -67,19 +73,13 @@ while True:
 
         # Keep the ship within the screen bounds
         ship_rect.clamp_ip(screen.get_rect())
+
+        text = font.render(f"Score: {score}", True, WHITE)
+        screen.blit(text, (10, 10))
+
         
     if not game_over and score >=15:
         obstacle_rect.y +=3
-
-    # Draw everything
-    screen.fill(BLACK)
-    screen.blit(ship_image, ship_rect)
-    screen.blit(obstacle_image, obstacle_rect)
-
-    # Draw score
-    font = pygame.font.Font(None, 36)
-    text = font.render(f"Score: {score}", True, WHITE)
-    screen.blit(text, (10, 10))
 
     if game_over:
         game_over_text = font.render("Game Over", True, RED)
@@ -91,9 +91,9 @@ while True:
             ship_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)
             obstacle_rect.center = (random.randint(0, SCREEN_WIDTH), 0)
         restart_text = font.render("Press R to Restart", True, GREEN)
-        screen.blit(game_over_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 20))
+        screen.blit(game_over_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 60))
         screen.blit(restart_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 20))
-        screen.blit(score_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + -60))
+        screen.blit(score_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + -20))
 
     pygame.display.flip()
     clock.tick(FPS)
