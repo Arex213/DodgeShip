@@ -15,6 +15,7 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
 
 # Initialize screen
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -22,9 +23,11 @@ pygame.display.set_caption("DodgeShip")
 clock = pygame.time.Clock()
 
 # Load assets
-ship_image = pygame.image.load("sprites/ship.png").convert_alpha()
+ship_image_raw=pygame.image.load("sprites/ship.png").convert_alpha()
+ship_image = pygame.transform.scale(ship_image_raw, (ship_image_raw.get_width() * 2, ship_image_raw.get_height() * 2))
 ship_rect = ship_image.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100))
-obstacle_image = pygame.image.load("sprites/obstacle.png").convert_alpha()
+obstacle_image_raw = pygame.image.load("sprites/obstacle.png").convert_alpha()
+obstacle_image = pygame.transform.scale(obstacle_image_raw, (obstacle_image_raw.get_width() * 2, obstacle_image_raw.get_height() * 2))
 obstacle_rect = obstacle_image.get_rect(center=(random.randint(0, SCREEN_WIDTH), 0))
 
 # Game variables
@@ -54,29 +57,33 @@ while True:
         # Handle ship movement
         keys = pygame.key.get_pressed()
         if (keys[pygame.K_UP] or keys[pygame.K_w]) and ship_rect.top > 0:
-            ship_rect.y -= 5
+            ship_rect.y -= 7
         if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and ship_rect.bottom < SCREEN_HEIGHT:
-            ship_rect.y += 5
+            ship_rect.y += 7
         if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and ship_rect.left > 0:
-            ship_rect.x -= 5
+            ship_rect.x -= 7
         if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and ship_rect.right < SCREEN_WIDTH:
-            ship_rect.x += 5
-        
+            ship_rect.x += 7
+
         # Keep the ship within the screen bounds
         ship_rect.clamp_ip(screen.get_rect())
         
+    if not game_over and score >=15:
+        obstacle_rect.y +=3
+
     # Draw everything
-    screen.fill(WHITE)
+    screen.fill(BLACK)
     screen.blit(ship_image, ship_rect)
     screen.blit(obstacle_image, obstacle_rect)
 
     # Draw score
     font = pygame.font.Font(None, 36)
-    text = font.render(f"Score: {score}", True, BLACK)
+    text = font.render(f"Score: {score}", True, WHITE)
     screen.blit(text, (10, 10))
 
     if game_over:
         game_over_text = font.render("Game Over", True, RED)
+        score_text = font.render(f"Score: {score}", True, YELLOW)
         restart_button = pygame.key.get_pressed()
         if restart_button[pygame.K_r]:
             game_over = False
@@ -86,7 +93,9 @@ while True:
         restart_text = font.render("Press R to Restart", True, GREEN)
         screen.blit(game_over_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 20))
         screen.blit(restart_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 20))
+        screen.blit(score_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + -60))
 
     pygame.display.flip()
     clock.tick(FPS)
+
 
