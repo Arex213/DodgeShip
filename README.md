@@ -43,4 +43,4 @@ cd DodgeShip
 pip install pygame
 
 # Run the game
-python dodge_ship.py
+python main.py
