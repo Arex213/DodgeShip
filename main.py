@@ -30,11 +30,13 @@ ship_rect = ship_image.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100))
 obstacle_image_raw = pygame.image.load("sprites/obstacle.png").convert_alpha()
 obstacle_image = pygame.transform.scale(obstacle_image_raw, (obstacle_image_raw.get_width() * 2, obstacle_image_raw.get_height() * 2))
 obstacle_rect = obstacle_image.get_rect(center=(random.randint(0, SCREEN_WIDTH), 0))
+background=pygame.image.load("sprites/bg1.png").convert_alpha()
+background=pygame.transform.scale(background,(SCREEN_WIDTH,SCREEN_HEIGHT))
 
 # Game variables
 score = 0
 game_over = False
-
+x=0; y=0
 
 # Game loop
 while True:
@@ -45,6 +47,8 @@ while True:
 
     # Draw everything
     screen.fill(BLACK)
+    screen.blit(background,(x,y))
+    screen.blit(background,(x,y-SCREEN_HEIGHT))
     screen.blit(ship_image, ship_rect)
     screen.blit(obstacle_image, obstacle_rect)
 
@@ -59,6 +63,15 @@ while True:
         # Check for collisions
         if ship_rect.colliderect(obstacle_rect):
             game_over = True
+        
+        # Moving background
+        y +=1
+        if y==SCREEN_HEIGHT:
+            y=0
+
+        if score >=15:
+             obstacle_rect.y +=3
+             y +=3
 
         # Handle ship movement
         keys = pygame.key.get_pressed()
@@ -77,9 +90,6 @@ while True:
         text = font.render(f"Score: {score}", True, WHITE)
         screen.blit(text, (10, 10))
 
-        
-    if not game_over and score >=15:
-        obstacle_rect.y +=3
 
     if game_over:
         game_over_text = font.render("Game Over", True, RED)
@@ -88,6 +98,7 @@ while True:
         if restart_button[pygame.K_r]:
             game_over = False
             score = 0
+            y=0 # Reset background position
             ship_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)
             obstacle_rect.center = (random.randint(0, SCREEN_WIDTH), 0)
         restart_text = font.render("Press R to Restart", True, GREEN)
