@@ -65,13 +65,12 @@ while True:
             game_over = True
         
         # Moving background
-        y +=1
+        y +=2
         if y==SCREEN_HEIGHT:
             y=0
 
         if score >=15:
              obstacle_rect.y +=3
-             y +=3
 
         # Handle ship movement
         keys = pygame.key.get_pressed()
