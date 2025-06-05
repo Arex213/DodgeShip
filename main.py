@@ -18,6 +18,9 @@ GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 YELLOW = (255, 255, 0)
 
+SLOW_MOTION_EVENT = pygame.USEREVENT + 2
+SMALLER_OBSTACLE_EVENT = pygame.USEREVENT + 3
+
 # Initialize screen
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("DodgeShip")
@@ -37,11 +40,11 @@ background=pygame.transform.scale(background,(SCREEN_WIDTH,SCREEN_HEIGHT))
 
 slow_motion_pu_image_raw = pygame.image.load("sprites/slow_motion.png").convert_alpha()
 slow_motion_pu_image = pygame.transform.scale(slow_motion_pu_image_raw, (ship_image_raw.get_width() * 1.5, ship_image_raw.get_height() * 1.5))
-slow_motion_pu_rect = slow_motion_pu_image.get_rect(center=(random.randint(0, SCREEN_WIDTH), random.randint(500, 700)))
+slow_motion_pu_rect = slow_motion_pu_image.get_rect(center=(random.randint(100, 700), random.randint(500, 550)))
 
 smaller_obstacle_pu_image_raw = pygame.image.load("sprites/smaller_obstacle.png").convert_alpha()
 smaller_obstacle_pu_image = pygame.transform.scale(smaller_obstacle_pu_image_raw, (obstacle_image_raw.get_width() * 1.5, obstacle_image_raw.get_height() * 1.5))
-smaller_obstacle_pu_rect = smaller_obstacle_pu_image.get_rect(center=(random.randint(0, SCREEN_WIDTH), random.randint(500, 700)))
+smaller_obstacle_pu_rect = smaller_obstacle_pu_image.get_rect(center=(random.randint(100, 700), random.randint(500, 550)))
 
 # Game variables
 score = 0
@@ -50,7 +53,7 @@ x=0; y=0
 in_main_menu = True
 high_score = 0
 
-# Slow motion effect
+# Power-up functions
 def slow_motion_powerup():
     global FPS
     FPS = 30  # Reduce FPS for slow motion effect
@@ -61,6 +64,20 @@ def smaller_obstacle_powerup():
     obstacle_image = pygame.transform.scale(obstacle_image_raw, (obstacle_image_raw.get_width() // 2, obstacle_image_raw.get_height() // 2))
     obstacle_rect = obstacle_image.get_rect(center=obstacle_rect.center) # Update the rect to match the new image size
     pygame.time.set_timer(pygame.USEREVENT + 1, 5000)  # Reset obstacle size after 5 seconds
+
+def spawn_slow_motion_powerup():
+    global slow_motion_pu_rect
+    slow_motion_pu_rect.x = random.randint(100, 700)
+    slow_motion_pu_rect.y = random.randint(500, 550)
+
+def spawn_smaller_obstacle_powerup():
+    global smaller_obstacle_pu_rect
+    smaller_obstacle_pu_rect.x = random.randint(100, 700)
+    smaller_obstacle_pu_rect.y = random.randint(500, 550)
+
+# Set up power-up timers
+pygame.time.set_timer(SLOW_MOTION_EVENT, 30000)  # Spawn slow motion every 30 seconds
+pygame.time.set_timer(SMALLER_OBSTACLE_EVENT, 40000)  # Spawn smaller obstacle every 40 seconds
 
 # Game loop
 while True:
@@ -75,14 +92,17 @@ while True:
             obstacle_image = pygame.transform.scale(obstacle_image_raw, (obstacle_image_raw.get_width() * 2, obstacle_image_raw.get_height() * 2))
             obstacle_rect = obstacle_image.get_rect(center=obstacle_rect.center)
             pygame.time.set_timer(pygame.USEREVENT + 1, 0)
-
+        if event.type == SLOW_MOTION_EVENT:
+            if slow_motion_pu_rect.x < 0:  # Only spawn if not already active
+                spawn_slow_motion_powerup()
+        if event.type == SMALLER_OBSTACLE_EVENT:
+            if smaller_obstacle_pu_rect.x < 0:  # Only spawn if not already active
+                spawn_smaller_obstacle_powerup()
 
     # Draw everything
     screen.fill(BLACK)
     screen.blit(background,(x,y))
     screen.blit(background,(x,y-SCREEN_HEIGHT))
-    screen.blit(slow_motion_pu_image, slow_motion_pu_rect)
-    screen.blit(smaller_obstacle_pu_image, smaller_obstacle_pu_rect)
     screen.blit(ship_image, ship_rect)
     screen.blit(obstacle_image, obstacle_rect)
 
@@ -115,13 +135,14 @@ while True:
         
         if ship_rect.colliderect(slow_motion_pu_rect):
             slow_motion_powerup()
-            slow_motion_pu_rect.x = random.randint(0, SCREEN_WIDTH)
-            slow_motion_pu_rect.y = random.randint(500, 700)
+            slow_motion_pu_rect.x = -100 # Move off-screen
+            slow_motion_pu_rect.y = -100
 
         if ship_rect.colliderect(smaller_obstacle_pu_rect):
             smaller_obstacle_powerup()
-            smaller_obstacle_pu_rect.x = random.randint(0, SCREEN_WIDTH)
-            smaller_obstacle_pu_rect.y = random.randint(500, 700)
+            smaller_obstacle_pu_rect.x = -100 # Move off-screen
+            smaller_obstacle_pu_rect.y = -100
+        
         # Moving background
         y +=2
         if y==SCREEN_HEIGHT:
@@ -147,6 +168,12 @@ while True:
         text = font.render(f"Score: {score}", True, WHITE)
         screen.blit(text, (10, 10))
 
+    if not in_main_menu:
+        # Draw power-ups only if they are on the screen
+        if slow_motion_pu_rect.x >= 0:
+            screen.blit(slow_motion_pu_image, slow_motion_pu_rect)
+        if smaller_obstacle_pu_rect.x >= 0:
+            screen.blit(smaller_obstacle_pu_image, smaller_obstacle_pu_rect)
 
     if game_over:
         game_over_text = font.render("Game Over", True, RED)
