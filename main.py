@@ -27,16 +27,40 @@ clock = pygame.time.Clock()
 ship_image_raw=pygame.image.load("sprites/ship.png").convert_alpha()
 ship_image = pygame.transform.scale(ship_image_raw, (ship_image_raw.get_width() * 2, ship_image_raw.get_height() * 2))
 ship_rect = ship_image.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100))
+
 obstacle_image_raw = pygame.image.load("sprites/obstacle.png").convert_alpha()
 obstacle_image = pygame.transform.scale(obstacle_image_raw, (obstacle_image_raw.get_width() * 2, obstacle_image_raw.get_height() * 2))
 obstacle_rect = obstacle_image.get_rect(center=(random.randint(0, SCREEN_WIDTH), 0))
+
 background=pygame.image.load("sprites/bg1.png").convert_alpha()
 background=pygame.transform.scale(background,(SCREEN_WIDTH,SCREEN_HEIGHT))
+
+slow_motion_pu_image_raw = pygame.image.load("sprites/slow_motion.png").convert_alpha()
+slow_motion_pu_image = pygame.transform.scale(slow_motion_pu_image_raw, (ship_image_raw.get_width() * 1.5, ship_image_raw.get_height() * 1.5))
+slow_motion_pu_rect = slow_motion_pu_image.get_rect(center=(random.randint(0, SCREEN_WIDTH), random.randint(500, 700)))
+
+smaller_obstacle_pu_image_raw = pygame.image.load("sprites/smaller_obstacle.png").convert_alpha()
+smaller_obstacle_pu_image = pygame.transform.scale(smaller_obstacle_pu_image_raw, (obstacle_image_raw.get_width() * 1.5, obstacle_image_raw.get_height() * 1.5))
+smaller_obstacle_pu_rect = smaller_obstacle_pu_image.get_rect(center=(random.randint(0, SCREEN_WIDTH), random.randint(500, 700)))
 
 # Game variables
 score = 0
 game_over = False
 x=0; y=0
+in_main_menu = True
+high_score = 0
+
+# Slow motion effect
+def slow_motion_powerup():
+    global FPS
+    FPS = 30  # Reduce FPS for slow motion effect
+    pygame.time.set_timer(pygame.USEREVENT, 5000)  # Reset FPS after 5 seconds
+
+def smaller_obstacle_powerup():
+    global obstacle_image, obstacle_rect
+    obstacle_image = pygame.transform.scale(obstacle_image_raw, (obstacle_image_raw.get_width() // 2, obstacle_image_raw.get_height() // 2))
+    obstacle_rect = obstacle_image.get_rect(center=obstacle_rect.center) # Update the rect to match the new image size
+    pygame.time.set_timer(pygame.USEREVENT + 1, 5000)  # Reset obstacle size after 5 seconds
 
 # Game loop
 while True:
@@ -44,26 +68,60 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+        if event.type == pygame.USEREVENT:
+            FPS = 60  # Reset FPS to normal after slow motion
+            pygame.time.set_timer(pygame.USEREVENT, 0)  # Stop the timer
+        if event.type == pygame.USEREVENT + 1:
+            obstacle_image = pygame.transform.scale(obstacle_image_raw, (obstacle_image_raw.get_width() * 2, obstacle_image_raw.get_height() * 2))
+            obstacle_rect = obstacle_image.get_rect(center=obstacle_rect.center)
+            pygame.time.set_timer(pygame.USEREVENT + 1, 0)
+
 
     # Draw everything
     screen.fill(BLACK)
     screen.blit(background,(x,y))
     screen.blit(background,(x,y-SCREEN_HEIGHT))
+    screen.blit(slow_motion_pu_image, slow_motion_pu_rect)
+    screen.blit(smaller_obstacle_pu_image, smaller_obstacle_pu_rect)
     screen.blit(ship_image, ship_rect)
     screen.blit(obstacle_image, obstacle_rect)
 
-    if not game_over:
+    if in_main_menu:
+        screen.fill(BLACK)
+        title_text = font.render("DodgeShip", True, WHITE)
+        start_text = font.render("Press Enter to Start", True, GREEN)
+        screen.blit(title_text, (SCREEN_WIDTH // 2 - title_text.get_width() // 2, SCREEN_HEIGHT // 2 - 60))
+        screen.blit(start_text, (SCREEN_WIDTH // 2 - start_text.get_width() // 2, SCREEN_HEIGHT // 2 + 20))
+        
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_RETURN]:
+            in_main_menu = False
+            score = 0
+            y=0
+
+    if not game_over and not in_main_menu:
         # Move the obstacle
         obstacle_rect.y += 10 
         if obstacle_rect.y > SCREEN_HEIGHT:
             obstacle_rect.y = 0
             obstacle_rect.x = random.randint(0, SCREEN_WIDTH)
             score += 1
+            high_score = max(high_score, score)
 
         # Check for collisions
         if ship_rect.colliderect(obstacle_rect):
             game_over = True
         
+        if ship_rect.colliderect(slow_motion_pu_rect):
+            slow_motion_powerup()
+            slow_motion_pu_rect.x = random.randint(0, SCREEN_WIDTH)
+            slow_motion_pu_rect.y = random.randint(500, 700)
+
+        if ship_rect.colliderect(smaller_obstacle_pu_rect):
+            smaller_obstacle_powerup()
+            smaller_obstacle_pu_rect.x = random.randint(0, SCREEN_WIDTH)
+            smaller_obstacle_pu_rect.y = random.randint(500, 700)
         # Moving background
         y +=2
         if y==SCREEN_HEIGHT:
@@ -92,7 +150,11 @@ while True:
 
     if game_over:
         game_over_text = font.render("Game Over", True, RED)
-        score_text = font.render(f"Score: {score}", True, YELLOW)
+        score_text = font.render(f"Score: {score}", True, BLUE)
+        if score > high_score:
+            high_score = score
+        high_score_text = font.render(f"High Score: {high_score}", True, YELLOW)
+        restart_text = font.render("Press R to Restart", True, GREEN)
         restart_button = pygame.key.get_pressed()
         if restart_button[pygame.K_r]:
             game_over = False
@@ -100,12 +162,10 @@ while True:
             y=0 # Reset background position
             ship_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)
             obstacle_rect.center = (random.randint(0, SCREEN_WIDTH), 0)
-        restart_text = font.render("Press R to Restart", True, GREEN)
         screen.blit(game_over_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 60))
-        screen.blit(restart_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 20))
-        screen.blit(score_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + -20))
+        screen.blit(restart_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 60))
+        screen.blit(score_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + +20))
+        screen.blit(high_score_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 20))
 
     pygame.display.flip()
     clock.tick(FPS)
-
-
