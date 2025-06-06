@@ -52,6 +52,24 @@ game_over = False
 x=0; y=0
 in_main_menu = True
 high_score = 0
+high_score_file = open("high_score.txt", "w")
+
+# Load high score from file
+try:
+    with open("high_score.txt", "r") as f:
+        try:
+            high_score = int(f.read().strip())
+        except ValueError:
+            high_score = 0
+        high_score_file.close()
+        
+except FileNotFoundError:
+    high_score = 0
+
+# Save high score to file
+def save_high_score():
+    with open("high_score.txt", "w") as f:
+        f.write(str(high_score))
 
 # Power-up functions
 def slow_motion_powerup():
@@ -180,6 +198,7 @@ while True:
         score_text = font.render(f"Score: {score}", True, BLUE)
         if score > high_score:
             high_score = score
+        
         high_score_text = font.render(f"High Score: {high_score}", True, YELLOW)
         restart_text = font.render("Press R to Restart", True, GREEN)
         restart_button = pygame.key.get_pressed()
@@ -193,6 +212,7 @@ while True:
         screen.blit(restart_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 60))
         screen.blit(score_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + +20))
         screen.blit(high_score_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 20))
+        save_high_score()
 
     pygame.display.flip()
     clock.tick(FPS)
