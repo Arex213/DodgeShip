@@ -52,24 +52,30 @@ game_over = False
 x=0; y=0
 in_main_menu = True
 high_score = 0
-high_score_file = open("high_score.txt", "w")
+saved_high_score = 0
 
 # Load high score from file
 try:
-    with open("high_score.txt", "r") as f:
+    with open("high_score.txt", "r+") as f:
         try:
-            high_score = int(f.read().strip())
+            saved_high_score = int(f.read().strip())
         except ValueError:
-            high_score = 0
-        high_score_file.close()
+            saved_high_score = 0
         
 except FileNotFoundError:
-    high_score = 0
+    saved_high_score = 0
+
+# Function to create a new obstacle
+def create_obstacle():
+    obstacle = obstacle_image.get_rect(center=(random.randint(0, SCREEN_WIDTH), 0))
+    return obstacle
+
+obstacles = []  # Initialize empty list of obstacles
 
 # Save high score to file
 def save_high_score():
     with open("high_score.txt", "w") as f:
-        f.write(str(high_score))
+        f.write(str(saved_high_score))
 
 # Power-up functions
 def slow_motion_powerup():
@@ -119,10 +125,13 @@ while True:
 
     # Draw everything
     screen.fill(BLACK)
-    screen.blit(background,(x,y))
-    screen.blit(background,(x,y-SCREEN_HEIGHT))
+    screen.blit(background, (x, y))
+    screen.blit(background, (x, y - SCREEN_HEIGHT))
     screen.blit(ship_image, ship_rect)
-    screen.blit(obstacle_image, obstacle_rect)
+
+    # Draw and update all obstacles
+    for obstacle_rect in obstacles:
+        screen.blit(obstacle_image, obstacle_rect)
 
     if in_main_menu:
         screen.fill(BLACK)
@@ -139,18 +148,32 @@ while True:
             y=0
 
     if not game_over and not in_main_menu:
-        # Move the obstacle
-        obstacle_rect.y += 10 
-        if obstacle_rect.y > SCREEN_HEIGHT:
-            obstacle_rect.y = 0
-            obstacle_rect.x = random.randint(0, SCREEN_WIDTH)
-            score += 1
-            high_score = max(high_score, score)
+        # Check if score is greater than 25 and add a new obstacle
+        if len(obstacles) == 0:
+            obstacle = create_obstacle()
+            obstacles.append(obstacle)
 
-        # Check for collisions
-        if ship_rect.colliderect(obstacle_rect):
-            game_over = True
+        # Move the obstacles
+        for obstacle_rect in obstacles:
+            obstacle_rect.y += 10
+            if obstacle_rect.y > SCREEN_HEIGHT:
+                obstacle_rect.y = 0
+                obstacle_rect.x = random.randint(0, SCREEN_WIDTH)
+                score += 1
+                high_score = max(high_score, score)
+                
+        if score > 25 and len(obstacles) < 3:  # Limit the number of obstacles to 3
+            obstacles.append(create_obstacle())
         
+        if score > 60 and len(obstacles) < 5:
+            obstacles.append(create_obstacle())
+
+        # Check for collisions with any obstacle
+        for obstacle_rect in obstacles:
+            if ship_rect.colliderect(obstacle_rect):
+                game_over = True
+                break  # No need to check other obstacles if game is over
+
         if ship_rect.colliderect(slow_motion_pu_rect):
             slow_motion_powerup()
             slow_motion_pu_rect.x = -100 # Move off-screen
@@ -166,8 +189,9 @@ while True:
         if y==SCREEN_HEIGHT:
             y=0
 
-        if score >=15:
-             obstacle_rect.y +=3
+        if score >= 15:
+            for obstacle_rect in obstacles:
+                obstacle_rect.y += 3
 
         # Handle ship movement
         keys = pygame.key.get_pressed()
@@ -198,8 +222,10 @@ while True:
         score_text = font.render(f"Score: {score}", True, BLUE)
         if score > high_score:
             high_score = score
-        
-        high_score_text = font.render(f"High Score: {high_score}", True, YELLOW)
+        if high_score > saved_high_score:
+            saved_high_score = high_score
+            save_high_score()
+        high_score_text = font.render(f"High Score: {saved_high_score}", True, YELLOW)
         restart_text = font.render("Press R to Restart", True, GREEN)
         restart_button = pygame.key.get_pressed()
         if restart_button[pygame.K_r]:
@@ -207,12 +233,11 @@ while True:
             score = 0
             y=0 # Reset background position
             ship_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT - 100)
-            obstacle_rect.center = (random.randint(0, SCREEN_WIDTH), 0)
+            obstacles = []  # Clear existing obstacles
         screen.blit(game_over_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 60))
         screen.blit(restart_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + 60))
         screen.blit(score_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 + +20))
         screen.blit(high_score_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 20))
-        save_high_score()
 
     pygame.display.flip()
     clock.tick(FPS)
