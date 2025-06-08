@@ -10,7 +10,7 @@ SCREEN_HEIGHT = 600
 FPS = 60
 font = pygame.font.Font(None, 36)
 
-# Icon positions for power-ups (top-right corner)
+# Icon positions for power-ups 
 ICON_MARGIN = 10
 slow_motion_pu_icon_pos = (SCREEN_WIDTH - 50, 10)
 smaller_obstacle_pu_icon_pos = (SCREEN_WIDTH - 50, 60)
