@@ -1,6 +1,7 @@
 import pygame
 import random 
 import sys
+import time
 
 pygame.init()
 
@@ -12,9 +13,9 @@ font = pygame.font.Font(None, 36)
 
 # Icon positions for power-ups 
 ICON_MARGIN = 10
-slow_motion_pu_icon_pos = (SCREEN_WIDTH - 50, 10)
-smaller_obstacle_pu_icon_pos = (SCREEN_WIDTH - 50, 60)
-invisible_pu_icon_pos = (SCREEN_WIDTH - 50, 110)
+slow_motion_pu_icon_pos = (10, 60)
+smaller_obstacle_pu_icon_pos = (10, 110)
+invisible_pu_icon_pos = (10, 170)
 
 # Colors
 WHITE = (255, 255, 255)
@@ -71,6 +72,12 @@ in_main_menu = True
 high_score = 0
 saved_high_score = 0
 bulletproof = False 
+slow_motion_timer = 0
+smaller_obstacle_timer = 0
+invisible_timer = 0
+slow_motion_start_time = 0
+smaller_obstacle_start_time = 0
+invisible_start_time = 0
 
 # Load high score from file
 try:
@@ -97,22 +104,28 @@ def save_high_score():
 
 # Power-up functions
 def slow_motion_powerup():
-    global FPS
+    global FPS , slow_motion_timer , slow_motion_start_time
     FPS = 30  # Reduce FPS for slow motion effect
+    slow_motion_timer = pygame.time.get_ticks() + 5000  # 5 seconds from now
     pygame.time.set_timer(pygame.USEREVENT, 5000)  # Reset FPS after 5 seconds
+    slow_motion_start_time = pygame.time.get_ticks() 
 
 def smaller_obstacle_powerup():
-    global obstacle_image, obstacle_rect
+    global obstacle_image, obstacle_rect, smaller_obstacle_timer, smaller_obstacle_start_time
     obstacle_image = pygame.transform.scale(obstacle_image_raw, (obstacle_image_raw.get_width() // 2, obstacle_image_raw.get_height() // 2))
     obstacle_rect = obstacle_image.get_rect(center=obstacle_rect.center) # Update the rect to match the new image size
     pygame.time.set_timer(pygame.USEREVENT + 1, 5000)  # Reset obstacle size after 5 seconds
+    smaller_obstacle_timer = pygame.time.get_ticks() + 5000
+    smaller_obstacle_start_time = pygame.time.get_ticks()
 
 def invisible_powerup():
-    global ship_image, ship_rect, bulletproof, invisible_ship_image
+    global ship_image, ship_rect, bulletproof, invisible_ship_image, invisible_timer, invisible_start_time
     ship_image = invisible_ship_image
     ship_rect = ship_image.get_rect(center=ship_rect.center)
     pygame.time.set_timer(pygame.USEREVENT + 2, 5000)  # Reset invisibility after 5 seconds
     bulletproof = True
+    invisible_timer = pygame.time.get_ticks() + 5000
+    invisible_start_time = pygame.time.get_ticks()
 
 def spawn_slow_motion_powerup():
     global slow_motion_pu_rect
@@ -129,7 +142,7 @@ def spawn_invisible_powerup():
     invisible_pu_rect.x = random.randint(100, 700)
     invisible_pu_rect.y = random.randint(500, 550)
 
-# Initialize power-up rects (off-screen initially)
+# Initialize power-up rects 
 slow_motion_pu_rect = slow_motion_pu_image.get_rect(x=-100, y=-100)
 smaller_obstacle_pu_rect = smaller_obstacle_pu_image.get_rect(x=-100, y=-100)
 invisible_pu_rect = invisible_pu_image.get_rect(x=-100, y=-100)
@@ -158,16 +171,15 @@ while True:
             pygame.time.set_timer(pygame.USEREVENT + 2, 0)
             bulletproof = False
         if event.type == SLOW_MOTION_EVENT:
-            if slow_motion_pu_rect.x < 0:  # Only spawn if not already active
+            if slow_motion_pu_rect.x < 0: 
                 spawn_slow_motion_powerup()
         if event.type == SMALLER_OBSTACLE_EVENT:
-            if smaller_obstacle_pu_rect.x < 0:  # Only spawn if not already active
+            if smaller_obstacle_pu_rect.x < 0: 
                 spawn_smaller_obstacle_powerup()
         if event.type == INVISIBLE_EVENT:
-            if invisible_pu_rect.x < 0:  # Only spawn if not already active
+            if invisible_pu_rect.x < 0: 
                 spawn_invisible_powerup()
 
-    # Draw everything
     screen.fill(BLACK)
     screen.blit(background, (x, y))
     screen.blit(background, (x, y - SCREEN_HEIGHT))
@@ -259,6 +271,22 @@ while True:
 
         text = font.render(f"Score: {score}", True, WHITE)
         screen.blit(text, (10, 10))
+
+        # Display remaining time for power-ups
+        if slow_motion_timer > pygame.time.get_ticks():
+            slow_motion_remaining = (slow_motion_timer - pygame.time.get_ticks()) / 1000
+            slow_motion_text = font.render(f"Slow Motion: {slow_motion_remaining:.0f}s", True, WHITE)
+            screen.blit(slow_motion_text, (50, 60))
+
+        if smaller_obstacle_timer > pygame.time.get_ticks():
+            smaller_obstacle_remaining = (smaller_obstacle_timer - pygame.time.get_ticks()) / 1000
+            smaller_obstacle_text = font.render(f"Smaller Obstacle: {smaller_obstacle_remaining:.0f}s", True, WHITE)
+            screen.blit(smaller_obstacle_text, (50, 110))
+
+        if invisible_timer > pygame.time.get_ticks():
+            invisible_remaining = (invisible_timer - pygame.time.get_ticks()) / 1000
+            invisible_text = font.render(f"Invisible: {invisible_remaining:.0f}s", True, WHITE)
+            screen.blit(invisible_text, (50, 170))
 
     if not in_main_menu:
         if slow_motion_pu_rect.x >= 0:
